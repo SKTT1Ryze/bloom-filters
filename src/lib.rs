@@ -1,8 +1,8 @@
 use std::hash::Hash;
 
 pub mod buckets;
-mod hash;
-mod stable;
+pub mod hash;
+pub mod stable;
 
 pub use crate::hash::{BuildHashKernels, DefaultBuildHashKernels, DefaultBuildHasher, DefaultHashKernels, HashKernels};
 pub use crate::stable::Filter as StableBloomFilter;

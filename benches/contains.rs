@@ -1,5 +1,6 @@
 use bloom_filters::{BloomFilter, DefaultBuildHashKernels, StableBloomFilter};
 use bloom_filters::buckets::compute_word_num;
+use bloom_filters::filter;
 use criterion::{criterion_group, criterion_main, Criterion, Fun};
 use rand::distributions::Standard;
 use rand::{random, thread_rng, Rng};
@@ -12,7 +13,7 @@ fn bench(c: &mut Criterion) {
         // bucket size: 3
         // fp rate: 0.03
         // bucket count = -10 * ln(0.03) / ln2 ^ 2 = 72.9844
-        let mut filter = StableBloomFilter::<_, {compute_word_num(73, 3)}, 73, 3>::new(*fp_rate, DefaultBuildHashKernels::new(random(), RandomState::new()));
+        let mut filter = filter!(73, 3, *fp_rate, DefaultBuildHashKernels::new(random(), RandomState::new()));
         let items: Vec<usize> = thread_rng().sample_iter(&Standard).take(7).collect();
         items.iter().for_each(|i| filter.insert(i));
         let items: Vec<usize> = thread_rng().sample_iter(&Standard).take(7).collect();

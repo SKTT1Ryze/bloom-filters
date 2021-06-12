@@ -4,6 +4,7 @@ use crate::{BloomFilter, BuildHashKernels, HashKernels};
 use rand::random;
 use std::hash::Hash;
 
+
 pub struct Filter<BHK: BuildHashKernels, const W: usize, const M: usize, const D: u8> {
     buckets: Buckets<W, M, D>,      // filter data
     hash_kernels: BHK::HK, // hash kernels
@@ -31,22 +32,6 @@ impl<BHK: BuildHashKernels, const W: usize, const M: usize, const D: u8> Filter<
         }
     }
 
-    pub fn with_raw_data(raw_data: &[u8], fp_rate: f64, build_hash_kernels: BHK) -> Self {
-        let buckets = Buckets::with_raw_data(raw_data);
-        let mut k = compute_k_num(fp_rate);
-        if k > M {
-            k = M
-        } else if k == 0 {
-            k = 1
-        }
-        let hash_kernels = build_hash_kernels.with_k(k, buckets.len());
-        Self {
-            buckets,
-            hash_kernels,
-            p: compute_p_num(M, k, D, fp_rate)
-        }
-    }
-    
     pub fn buckets(&self) -> &Buckets<W, M, D> {
         &self.buckets
     }
@@ -91,6 +76,16 @@ impl<BHK: BuildHashKernels, const W: usize, const B: usize, const S: u8> BloomFi
     }
 }
 
+#[macro_export]
+macro_rules! filter {
+    (
+        $bucket_count:expr, $bucket_size:expr,
+        $fp_rate:expr, $build_hash_kernels:expr
+    ) => {
+        StableBloomFilter::<_, {compute_word_num($bucket_count, $bucket_size)}, $bucket_count, $bucket_size>::new($fp_rate, $build_hash_kernels)
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -100,8 +95,7 @@ mod tests {
     use std::collections::hash_map::RandomState;
     use crate::buckets::compute_word_num;
     fn _contains(items: &[usize]) {
-        // d = 3, max = (1 << d) - 1
-        let mut filter = Filter::<_, {compute_word_num(100, 3)}, 100, 3>::new(0.03, DefaultBuildHashKernels::new(random(), RandomState::new()));
+        let mut filter = Filter::<_, {compute_word_num(730, 3)}, 730, 3>::new(0.03, DefaultBuildHashKernels::new(random(), RandomState::new()));
         assert!(items.iter().all(|i| !filter.contains(i)));
         items.iter().for_each(|i| filter.insert(i));
         assert!(items.iter().all(|i| filter.contains(i)));
