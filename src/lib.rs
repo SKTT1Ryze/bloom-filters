@@ -1,13 +1,9 @@
 use std::hash::Hash;
 
 mod buckets;
-mod classic;
-mod counting;
 mod hash;
 mod stable;
 
-pub use crate::classic::Filter as ClassicBloomFilter;
-pub use crate::counting::Filter as CountingBloomFilter;
 pub use crate::hash::{BuildHashKernels, DefaultBuildHashKernels, DefaultBuildHasher, DefaultHashKernels, HashKernels};
 pub use crate::stable::Filter as StableBloomFilter;
 

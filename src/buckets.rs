@@ -1,4 +1,3 @@
-use std::f64::consts::LN_2;
 use std::mem::size_of;
 use std::ptr::copy_nonoverlapping;
 
@@ -6,50 +5,37 @@ type Word = u64;
 const BYTES_PER_WORD: usize = size_of::<Word>();
 const BITS_PER_WORD: usize = BYTES_PER_WORD * 8;
 
-pub struct Buckets {
-    data: Vec<Word>,
-    count: usize,
-    bucket_size: u8,
+#[allow(non_upper_case_globals)]
+pub struct Buckets<const WordCount: usize, const BucketCount: usize, const BucketSize: u8> {
+    data: [Word; WordCount],
     max: u8,
 }
 
-impl Buckets {
-    pub fn with_fp_rate(items_count: usize, fp_rate: f64, bucket_size: u8) -> Self {
-        Self::new(compute_m_num(items_count, fp_rate), bucket_size)
-    }
-
+#[allow(non_upper_case_globals)]
+impl<const WordCount: usize, const BucketCount: usize, const BucketSize: u8> Buckets<WordCount, BucketCount, BucketSize> {
     /// Creates a new Buckets with the provided number of buckets where
     /// each bucket is the specified number of bits.
-    pub fn new(count: usize, bucket_size: u8) -> Self {
-        debug_assert!(bucket_size < 8);
+    pub fn new() -> Self {
+        debug_assert!(BucketSize < 8);
         Self {
-            data: vec![0; (count * bucket_size as usize + BITS_PER_WORD - 1) / BITS_PER_WORD],
-            count,
-            bucket_size,
-            max: (1u8 << bucket_size) - 1,
+            data:[0; WordCount],
+            max: (1u8 << BucketSize) - 1,
         }
     }
 
-    pub fn with_raw_data(count: usize, bucket_size: u8, raw_data: &[u8]) -> Self {
-        debug_assert!(bucket_size < 8);
-        debug_assert!((count * bucket_size as usize + BITS_PER_WORD - 1) / BITS_PER_WORD * 8 == raw_data.len());
-        let data = raw_data
-            .chunks(BYTES_PER_WORD)
-            .map(|buf| {
-                let mut d = [0u8; BYTES_PER_WORD];
-                let d_slice = d.as_mut_ptr();
-                unsafe {
-                    copy_nonoverlapping(buf.as_ptr(), d_slice, BYTES_PER_WORD);
-                    (*(d_slice as *const Word)).to_le()
-                }
-            })
-            .collect::<Vec<_>>();
-
+    pub fn with_raw_data(raw_data: &[u8]) -> Self {
+        debug_assert!(BucketSize < 8);
+        debug_assert!(WordCount * 8 == raw_data.len());
+        let data = [0; WordCount];
+        for (idx, buf) in raw_data.chunks(BYTES_PER_WORD).enumerate() {
+            let d_slice = &data[idx] as *const _ as *mut u8;
+            unsafe {
+                copy_nonoverlapping(buf.as_ptr(), d_slice, BYTES_PER_WORD);
+            }
+        }
         Self {
             data,
-            count,
-            bucket_size,
-            max: (1u8 << bucket_size) - 1,
+            max: (1u8 << BucketSize) - 1,
         }
     }
 
@@ -65,23 +51,21 @@ impl Buckets {
     }
 
     pub fn update(&mut self, raw_data: &[u8]) {
-        let new_data = self
-            .data
-            .iter()
+        self.data
+            .iter_mut()
             .zip(raw_data.chunks(BYTES_PER_WORD))
-            .map(|(word, bytes)| {
-                bytes.iter().enumerate().fold(*word, |acc, (offset, byte)| {
+            .for_each(|(word, bytes)| {
+                let value = bytes.iter().enumerate().fold(*word, |acc, (offset, byte)| {
                     acc | (*byte as Word) << (offset * BYTES_PER_WORD)
-                })
-            })
-            .collect::<Vec<_>>();
+                });
+                *word = value;
+            });
 
-        self.data = new_data;
     }
 
     #[inline(always)]
     pub fn len(&self) -> usize {
-        self.count
+        BucketCount
     }
 
     #[inline(always)]
@@ -106,14 +90,14 @@ impl Buckets {
     }
 
     pub fn set(&mut self, bucket: usize, byte: u8) {
-        let offset = bucket * self.bucket_size as usize;
-        let length = self.bucket_size as usize;
+        let offset = bucket * BucketSize as usize;
+        let length = BucketSize as usize;
         let word = if byte > self.max as u8 { self.max } else { byte } as Word;
         self.set_word(offset, length, word);
     }
 
     pub fn get(&self, bucket: usize) -> u8 {
-        self.get_word(bucket * self.bucket_size as usize, self.bucket_size as usize) as u8
+        self.get_word(bucket * BucketSize as usize, BucketSize as usize) as u8
     }
 
     fn set_word(&mut self, offset: usize, length: usize, word: Word) {
@@ -144,14 +128,8 @@ impl Buckets {
     }
 }
 
-const LN_2_2: f64 = LN_2 * LN_2;
-
-// Calculates the optimal buckets count, m, based on the number of
-// items and the desired rate of false positives.
-fn compute_m_num(items_count: usize, fp_rate: f64) -> usize {
-    debug_assert!(items_count > 0);
-    debug_assert!(fp_rate > 0.0 && fp_rate < 1.0);
-    ((items_count as f64) * fp_rate.ln().abs() / LN_2_2).ceil() as usize
+pub const fn compute_word_num(bucket_cout: usize, bucket_size: u8) -> usize {
+    (bucket_cout * bucket_size as usize + BITS_PER_WORD - 1) / BITS_PER_WORD
 }
 
 #[cfg(test)]
@@ -160,7 +138,7 @@ mod tests {
 
     #[test]
     fn one_bit() {
-        let mut buckets = Buckets::new(100, 1);
+        let mut buckets = Buckets::<{compute_word_num(100, 1)}, 100, 1>::new();
         buckets.set(0, 1);
         buckets.set(1, 0);
         buckets.set(2, 1);
@@ -173,7 +151,7 @@ mod tests {
 
     #[test]
     fn three_bits() {
-        let mut buckets = Buckets::new(100, 3);
+        let mut buckets = Buckets::<{compute_word_num(100, 3)}, 100, 3>::new();
         buckets.set(0, 1);
         buckets.set(1, 2);
         buckets.set(10, 3);
@@ -190,7 +168,7 @@ mod tests {
 
     #[test]
     fn reset() {
-        let mut buckets = Buckets::new(100, 1);
+        let mut buckets = Buckets::<{compute_word_num(100, 1)}, 100, 1>::new();
         buckets.set(1, 1);
         assert_eq!(1, buckets.get(1));
         buckets.reset();
@@ -199,7 +177,7 @@ mod tests {
 
     #[test]
     fn increment() {
-        let mut buckets = Buckets::new(100, 3);
+        let mut buckets = Buckets::<{compute_word_num(100, 3)}, 100, 3>::new();
         buckets.increment(10, 2);
         assert_eq!(2, buckets.get(10));
         buckets.increment(10, 1);
@@ -212,7 +190,7 @@ mod tests {
         assert_eq!(0, buckets.get(10));
 
         // test overflow
-        let mut buckets = Buckets::new(3, 7);
+        let mut buckets = Buckets::<{compute_word_num(3, 7)}, 3, 7>::new();
         buckets.increment(0, 127);
         assert_eq!(127, buckets.get(0));
         buckets.increment(0, 1);
@@ -221,19 +199,19 @@ mod tests {
 
     #[test]
     fn with_raw_data() {
-        let mut buckets = Buckets::new(100, 1);
+        let mut buckets = Buckets::<{compute_word_num(100, 1)}, 100, 1>::new();
         buckets.set(0, 1);
         buckets.set(1, 0);
         buckets.set(2, 1);
         buckets.set(3, 0);
         let raw_data = buckets.raw_data();
-        let buckets = Buckets::with_raw_data(100, 1, &raw_data);
+        let buckets = Buckets::<{compute_word_num(100, 1)}, 100, 1>::with_raw_data(&raw_data);
         assert_eq!(1, buckets.get(0));
         assert_eq!(0, buckets.get(1));
         assert_eq!(1, buckets.get(2));
         assert_eq!(0, buckets.get(3));
 
-        let mut buckets = Buckets::new(100, 3);
+        let mut buckets = Buckets::<{compute_word_num(100, 3)}, 100, 3>::new();
         buckets.set(0, 1);
         buckets.set(1, 2);
         buckets.set(10, 3);
@@ -241,7 +219,7 @@ mod tests {
         buckets.set(20, 5);
         buckets.set(21, 6);
         let raw_data = buckets.raw_data();
-        let buckets = Buckets::with_raw_data(100, 3, &raw_data);
+        let buckets = Buckets::<{compute_word_num(100, 3)}, 100, 3>::with_raw_data(&raw_data);
         assert_eq!(1, buckets.get(0));
         assert_eq!(2, buckets.get(1));
         assert_eq!(3, buckets.get(10));
@@ -252,12 +230,12 @@ mod tests {
 
     #[test]
     fn update() {
-        let mut b1 = Buckets::new(100, 1);
+        let mut b1 = Buckets::<{compute_word_num(100, 1)}, 100, 1>::new();
         b1.set(0, 1);
         b1.set(20, 1);
         b1.set(63, 1);
 
-        let mut b2 = Buckets::new(50, 1);
+        let mut b2 = Buckets::<{compute_word_num(50, 1)}, 50, 1>::new();
         b2.set(7, 1);
         b2.set(20, 1);
         b2.set(21, 1);
