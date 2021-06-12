@@ -1,7 +1,6 @@
 //! Multi Bloom Filter Implementation
 use crate::{BloomFilter, MultiBloomFilter};
 
-#[derive(Clone, Copy)]
 pub struct DefaultMultiBloomFilter<BF: BloomFilter, const N: usize> {
     bloom_filters: [BF; N]
 }
@@ -31,5 +30,19 @@ impl<B: BloomFilter, const N: usize> MultiBloomFilter for DefaultMultiBloomFilte
 
 #[test]
 fn default_multi_bloom_filter_test() {
-    
+    use crate::StableBloomFilter;
+    use crate::hash::DefaultBuildHashKernels;
+    use crate::buckets::compute_word_num;
+    use rand::random;
+    use std::collections::hash_map::RandomState;
+    use crate::filter;
+    let filtes = [
+        filter!(72, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new())),
+        filter!(72, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new())),
+        filter!(72, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new()))
+        ];
+    let multi_filter = DefaultMultiBloomFilter::new(filtes);
+    for filter in multi_filter.bloom_filter() {
+        todo!()
+    }
 }
