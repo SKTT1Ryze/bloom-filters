@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-mod buckets;
+pub mod buckets;
 mod hash;
 mod stable;
 
