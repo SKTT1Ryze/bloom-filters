@@ -1,6 +1,4 @@
 //! Multi Bloom Filter Implementation
-use proptest::strategy::Filter;
-
 use crate::{BloomFilter, MultiBloomFilter};
 
 pub struct DefaultMultiBloomFilter<BF: BloomFilter, const N: usize> {
@@ -31,6 +29,8 @@ impl<B: BloomFilter, const N: usize> MultiBloomFilter for DefaultMultiBloomFilte
     }
 }
 
+
+
 #[test]
 fn default_multi_bloom_filter_test() {
     use crate::StableBloomFilter;
@@ -41,9 +41,9 @@ fn default_multi_bloom_filter_test() {
     use crate::filter;
 
     let filtes = [
-        filter!(72, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new())),
-        filter!(72, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new())),
-        filter!(72, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new()))
+        filter!(73, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new())),
+        filter!(73, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new())),
+        filter!(73, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new()))
         ];
     let multi_filter = DefaultMultiBloomFilter::new(filtes);
     let items = [vec![1; 10], vec![1; 10], vec![1; 10]];

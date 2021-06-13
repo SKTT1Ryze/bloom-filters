@@ -7,6 +7,7 @@ pub mod multi;
 
 pub use crate::hash::{BuildHashKernels, DefaultBuildHashKernels, DefaultBuildHasher, DefaultHashKernels, HashKernels};
 pub use crate::stable::Filter as StableBloomFilter;
+pub use crate::multi::DefaultMultiBloomFilter;
 
 pub trait BloomFilter {
     fn insert<T: Hash>(&mut self, item: &T);

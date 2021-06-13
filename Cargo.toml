@@ -28,3 +28,7 @@ harness = false
 [[bench]]
 name = "false_positives_rate"
 harness = false
+
+[[bench]]
+name = "multi"
+harness = false
