@@ -1,4 +1,6 @@
 //! Multi Bloom Filter Implementation
+use proptest::strategy::Filter;
+
 use crate::{BloomFilter, MultiBloomFilter};
 
 pub struct DefaultMultiBloomFilter<BF: BloomFilter, const N: usize> {
@@ -20,6 +22,7 @@ impl<B: BloomFilter, const N: usize> IntoIterator for DefaultMultiBloomFilter<B,
     }
 }
 
+
 impl<B: BloomFilter, const N: usize> MultiBloomFilter for DefaultMultiBloomFilter<B, N> {
     type BF = B;
     type BI = std::array::IntoIter<B, N>;
@@ -36,13 +39,27 @@ fn default_multi_bloom_filter_test() {
     use rand::random;
     use std::collections::hash_map::RandomState;
     use crate::filter;
+
     let filtes = [
         filter!(72, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new())),
         filter!(72, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new())),
         filter!(72, 3, 0.03, DefaultBuildHashKernels::new(random(), RandomState::new()))
         ];
     let multi_filter = DefaultMultiBloomFilter::new(filtes);
-    for filter in multi_filter.bloom_filter() {
-        todo!()
-    }
+    let items = [vec![1; 10], vec![1; 10], vec![1; 10]];
+    let iter: Vec<_> = multi_filter
+        .into_iter()
+        .zip(items.iter())
+        .map(|(mut f, i)| {
+            i.iter().for_each(|item| f.insert(item));
+            f
+        })
+        .collect();
+    let ret = iter
+        .iter()
+        .zip(items.iter())
+        .all(|(f, i)| {
+            i.iter().all(|item| f.contains(item))
+        });
+    assert!(ret);
 }
