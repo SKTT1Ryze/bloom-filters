@@ -6,6 +6,7 @@ const BYTES_PER_WORD: usize = size_of::<Word>();
 const BITS_PER_WORD: usize = BYTES_PER_WORD * 8;
 
 #[allow(non_upper_case_globals)]
+#[derive(Clone)]
 pub struct Buckets<const WordCount: usize, const BucketCount: usize, const BucketSize: u8> {
     data: [Word; WordCount],
     max: u8,

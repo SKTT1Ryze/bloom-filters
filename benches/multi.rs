@@ -14,9 +14,9 @@ fn bench(c: &mut Criterion) {
         let items = [items0, items1, items2];
         b.iter(|| {
             let filtes = [
-                filter!(73, 3, *fp_rate, DefaultBuildHashKernels::new(random(), RandomState::new())),
-                filter!(73, 3, *fp_rate, DefaultBuildHashKernels::new(random(), RandomState::new())),
-                filter!(73, 3, *fp_rate, DefaultBuildHashKernels::new(random(), RandomState::new()))
+                filter!(730, 3, *fp_rate, DefaultBuildHashKernels::new(random(), RandomState::new())),
+                filter!(730, 3, *fp_rate, DefaultBuildHashKernels::new(random(), RandomState::new())),
+                filter!(730, 3, *fp_rate, DefaultBuildHashKernels::new(random(), RandomState::new()))
             ];
             let multi_filter = DefaultMultiBloomFilter::new(filtes);
             let iter: Vec<_> = multi_filter
@@ -27,16 +27,16 @@ fn bench(c: &mut Criterion) {
                     f
                 })
                 .collect();
-            let ret = iter
+            let _ret = iter
                 .iter()
                 .zip(items.iter())
                 .all(|(f, i)| {
                     i.iter().all(|item| f.contains(item))
                 });
-            assert!(ret);
+            // assert!(ret);
         });
     });
-    c.bench_functions("multi", vec![multi], 0.03);
+    c.bench_functions("multi", vec![multi], 0.3);
 }
 
 criterion_group!(benches, bench);

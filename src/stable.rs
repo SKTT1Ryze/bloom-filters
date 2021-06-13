@@ -4,7 +4,7 @@ use crate::{BloomFilter, BuildHashKernels, HashKernels};
 use rand::random;
 use std::hash::Hash;
 
-
+#[derive(Clone)]
 pub struct Filter<BHK: BuildHashKernels, const W: usize, const M: usize, const D: u8> {
     buckets: Buckets<W, M, D>,      // filter data
     hash_kernels: BHK::HK, // hash kernels

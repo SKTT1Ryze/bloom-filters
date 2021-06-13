@@ -48,7 +48,7 @@ fn default_multi_bloom_filter_test() {
     let multi_filter = DefaultMultiBloomFilter::new(filtes);
     let items = [vec![1; 10], vec![1; 10], vec![1; 10]];
     let iter: Vec<_> = multi_filter
-        .into_iter()
+        .bloom_filter()
         .zip(items.iter())
         .map(|(mut f, i)| {
             i.iter().for_each(|item| f.insert(item));

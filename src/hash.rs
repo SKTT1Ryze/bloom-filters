@@ -30,6 +30,7 @@ where
 }
 
 /// Used to create a DefaultHashKernels instance.
+#[derive(Clone)]
 pub struct DefaultBuildHashKernels<BH> {
     hash_seed: usize,
     build_hasher: BH,
@@ -55,6 +56,7 @@ impl<BH: BuildHasher> BuildHashKernels for DefaultBuildHashKernels<BH> {
 }
 
 /// A default implementation of [Kirsch-Mitzenmacher-Optimization](https://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf) hash function
+#[derive(Clone)]
 pub struct DefaultHashKernels<BH> {
     k: usize,         // numbers of hash iterating
     n: usize,         // filter size
