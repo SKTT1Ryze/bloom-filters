@@ -1,6 +1,6 @@
 [package]
 name = "bloom-filters"
-version = "0.1.1"
+version = "0.1.2"
 license = "Apache-2.0 OR MIT"
 authors = ["Nervos Core Dev <dev@nervos.org>"]
 edition = "2018"
@@ -11,7 +11,7 @@ keywords = ["bloom-filter"]
 categories = ["algorithms", "data-structures"]
 
 [dependencies]
-rand = "0.6"
+rand = "0.8"
 
 [dev-dependencies]
 criterion = "0.2"
